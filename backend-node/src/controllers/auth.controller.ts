@@ -154,31 +154,26 @@ export async function refreshToken(req: Request, res: Response, next: NextFuncti
     if (!user) throw new UserNotFoundError();
     if (!user.isActive) throw new AccountDeactivatedError();
 
-    const newAccessToken = signAccessToken({ userId: user.id, role: user.role, email: user.email });
-    const newRawRefreshToken = generateSecureToken(48);
-    const newTokenHash = sha256(newRawRefreshToken);
+    const rawRefreshToken = generateSecureToken(48);
+    const newTokenHash = sha256(rawRefreshToken);
     const newExpiresAt = new Date(Date.now() + parseDurationMs(config.jwt.refreshExpiry));
 
-    // Create new token and revoke old one in a transaction
-    const [newStored] = await prisma.$transaction([
-      prisma.refreshToken.create({
+    // Create new token and revoke old one in a single atomic transaction
+    await prisma.$transaction(async (tx) => {
+      const newRt = await tx.refreshToken.create({
         data: { tokenHash: newTokenHash, userId: user.id, expiresAt: newExpiresAt },
-      }),
-      prisma.refreshToken.update({
+      });
+      await tx.refreshToken.update({
         where: { id: stored.id },
-        data: { revokedAt: new Date() },
-      }),
-    ]);
-
-    // Update the replacedByTokenId on old token
-    await prisma.refreshToken.update({
-      where: { id: stored.id },
-      data: { replacedByTokenId: newStored.id },
+        data: { revokedAt: new Date(), replacedByTokenId: newRt.id },
+      });
     });
+
+    const newAccessToken = signAccessToken({ userId: user.id, role: user.role, email: user.email });
 
     sendSuccess(res, {
       accessToken: newAccessToken,
-      refreshToken: newRawRefreshToken,
+      refreshToken: rawRefreshToken,
     });
   } catch (err) {
     next(err);

@@ -9,14 +9,14 @@ export interface JwtPayload {
 
 export function signAccessToken(payload: JwtPayload): string {
   return jwt.sign(payload, config.jwt.accessSecret, {
-    expiresIn: config.jwt.accessExpiry as string,
-  } as jwt.SignOptions);
+    expiresIn: config.jwt.accessExpiry as jwt.SignOptions['expiresIn'],
+  });
 }
 
 export function signRefreshToken(payload: JwtPayload): string {
   return jwt.sign(payload, config.jwt.refreshSecret, {
-    expiresIn: config.jwt.refreshExpiry as string,
-  } as jwt.SignOptions);
+    expiresIn: config.jwt.refreshExpiry as jwt.SignOptions['expiresIn'],
+  });
 }
 
 export function verifyAccessToken(token: string): JwtPayload {
