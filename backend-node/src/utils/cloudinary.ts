@@ -1,6 +1,12 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { config } from '../config/env';
 
+export interface CloudinaryUploadResult {
+  url: string;
+  publicId: string;
+}
+
+
 let configured = false;
 
 function ensureConfigured(): boolean {
@@ -41,4 +47,46 @@ export async function uploadProfileImage(
     );
     uploadStream.end(fileBuffer);
   });
+}
+
+export async function uploadBoardingImage(
+  fileBuffer: Buffer,
+  mimetype: string,
+): Promise<CloudinaryUploadResult> {
+  if (!ensureConfigured()) {
+    throw new Error('Cloudinary is not configured. Please set CLOUDINARY_* environment variables.');
+  }
+
+  let format: string;
+  if (mimetype === 'image/png') {
+    format = 'png';
+  } else if (mimetype === 'image/webp') {
+    format = 'webp';
+  } else {
+    format = 'jpg';
+  }
+
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'unistay/boarding-images',
+        resource_type: 'image',
+        format,
+      },
+      (error, result) => {
+        if (error || !result) {
+          return reject(error ?? new Error('Upload failed'));
+        }
+        resolve({ url: result.secure_url, publicId: result.public_id });
+      },
+    );
+    uploadStream.end(fileBuffer);
+  });
+}
+
+export async function deleteBoardingImage(publicId: string): Promise<void> {
+  if (!ensureConfigured()) {
+    throw new Error('Cloudinary is not configured. Please set CLOUDINARY_* environment variables.');
+  }
+  await cloudinary.uploader.destroy(publicId);
 }

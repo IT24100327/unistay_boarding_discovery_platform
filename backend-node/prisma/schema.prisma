@@ -16,6 +16,27 @@ enum Role {
   ADMIN
 }
 
+enum BoardingType {
+  SINGLE_ROOM
+  SHARED_ROOM
+  ANNEX
+  HOUSE
+}
+
+enum GenderPref {
+  MALE
+  FEMALE
+  ANY
+}
+
+enum BoardingStatus {
+  DRAFT
+  PENDING_APPROVAL
+  ACTIVE
+  REJECTED
+  INACTIVE
+}
+
 model User {
   id               String   @id @default(cuid())
   email            String   @unique
@@ -35,6 +56,8 @@ model User {
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens     PasswordResetToken[]
   refreshTokens           RefreshToken[]
+  boardings               Boarding[]
+  savedBoardings          SavedBoarding[]
 
   @@map("users")
 }
@@ -76,4 +99,72 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
+}
+
+model Boarding {
+  id               String         @id @default(cuid())
+  ownerId          String
+  title            String
+  slug             String         @unique
+  description      String
+  city             String
+  district         String
+  address          String?
+  monthlyRent      Int
+  boardingType     BoardingType
+  genderPref       GenderPref
+  isFurnished      Boolean        @default(false)
+  hasWifi          Boolean        @default(false)
+  nearUniversity   String?
+  latitude         Float
+  longitude        Float
+  maxOccupants     Int
+  currentOccupants Int            @default(0)
+  status           BoardingStatus @default(DRAFT)
+  rejectionReason  String?
+  isDeleted        Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  owner   User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  images  BoardingImage[]
+  rules   BoardingRule[]
+  savedBy SavedBoarding[]
+
+  @@map("boardings")
+}
+
+model BoardingImage {
+  id         String   @id @default(cuid())
+  boardingId String
+  url        String
+  publicId   String
+  createdAt  DateTime @default(now())
+
+  boarding Boarding @relation(fields: [boardingId], references: [id], onDelete: Cascade)
+
+  @@map("boarding_images")
+}
+
+model BoardingRule {
+  id         String @id @default(cuid())
+  boardingId String
+  rule       String
+
+  boarding Boarding @relation(fields: [boardingId], references: [id], onDelete: Cascade)
+
+  @@map("boarding_rules")
+}
+
+model SavedBoarding {
+  id         String   @id @default(cuid())
+  boardingId String
+  studentId  String
+  createdAt  DateTime @default(now())
+
+  boarding Boarding @relation(fields: [boardingId], references: [id], onDelete: Cascade)
+  student  User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([boardingId, studentId])
+  @@map("saved_boardings")
 }

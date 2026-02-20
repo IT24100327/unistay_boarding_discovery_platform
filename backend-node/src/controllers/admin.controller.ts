@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../config/prisma';
 import { sendSuccess } from '../utils/response';
-import { UserNotFoundError } from '../utils/AppError';
+import { UserNotFoundError, BoardingNotFoundError, InvalidStateTransitionError } from '../utils/AppError';
 import { AdminListUsersQuery } from '../validators/user.validators';
-import { Role } from '@prisma/client';
+import { RejectBoardingInput } from '../validators/boarding.validators';
+import { Role, BoardingStatus } from '@prisma/client';
 
 // GET /api/v1/admin/users
 export async function listUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -123,6 +124,84 @@ export async function activateUser(req: Request, res: Response, next: NextFuncti
     });
 
     sendSuccess(res, { id: user.id, isActive: user.isActive }, 'User activated successfully');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/v1/admin/boardings/pending
+export async function listPendingBoardings(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const boardings = await prisma.boarding.findMany({
+      where: { status: BoardingStatus.PENDING_APPROVAL, isDeleted: false },
+      orderBy: { updatedAt: 'asc' },
+      select: {
+        id: true,
+        ownerId: true,
+        title: true,
+        slug: true,
+        city: true,
+        district: true,
+        monthlyRent: true,
+        boardingType: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        images: { select: { id: true, url: true }, take: 1 },
+        owner: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+    });
+
+    sendSuccess(res, { boardings });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PATCH /api/v1/admin/boardings/:id/approve
+export async function approveBoarding(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params as { id: string };
+
+    const existing = await prisma.boarding.findUnique({ where: { id } });
+    if (!existing || existing.isDeleted) throw new BoardingNotFoundError();
+
+    if (existing.status !== BoardingStatus.PENDING_APPROVAL) {
+      throw new InvalidStateTransitionError('Only PENDING_APPROVAL listings can be approved');
+    }
+
+    const boarding = await prisma.boarding.update({
+      where: { id },
+      data: { status: BoardingStatus.ACTIVE, rejectionReason: null },
+      select: { id: true, status: true, title: true, updatedAt: true },
+    });
+
+    sendSuccess(res, { boarding }, 'Boarding approved successfully');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PATCH /api/v1/admin/boardings/:id/reject
+export async function rejectBoarding(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params as { id: string };
+    const { reason } = req.body as RejectBoardingInput;
+
+    const existing = await prisma.boarding.findUnique({ where: { id } });
+    if (!existing || existing.isDeleted) throw new BoardingNotFoundError();
+
+    if (existing.status !== BoardingStatus.PENDING_APPROVAL) {
+      throw new InvalidStateTransitionError('Only PENDING_APPROVAL listings can be rejected');
+    }
+
+    const boarding = await prisma.boarding.update({
+      where: { id },
+      data: { status: BoardingStatus.REJECTED, rejectionReason: reason },
+      select: { id: true, status: true, title: true, rejectionReason: true, updatedAt: true },
+    });
+
+    sendSuccess(res, { boarding }, 'Boarding rejected successfully');
   } catch (err) {
     next(err);
   }
