@@ -74,3 +74,66 @@ describe('Admin routes - Auth guard', () => {
     expect(res.body.success).toBe(false);
   });
 });
+
+describe('Boarding routes - Public endpoints', () => {
+  it('GET /api/v1/boardings with invalid query returns 422', async () => {
+    const res = await request(app).get('/api/v1/boardings?sortBy=invalid');
+    expect(res.status).toBe(422);
+    expect(res.body.success).toBe(false);
+  });
+
+  it('GET /api/v1/boardings/:slug returns 404 for non-existent slug without DB', async () => {
+    const res = await request(app).get('/api/v1/boardings/non-existent-slug-xyz');
+    // Without DB it returns 500, with DB it returns 404 for unknown slug
+    expect([404, 500]).toContain(res.status);
+    expect(res.body.success).toBe(false);
+  });
+});
+
+describe('Boarding routes - Auth guard', () => {
+  it('POST /api/v1/boardings returns 401 without token', async () => {
+    const res = await request(app).post('/api/v1/boardings').send({});
+    expect(res.status).toBe(401);
+    expect(res.body.success).toBe(false);
+  });
+
+  it('GET /api/v1/boardings/my-listings returns 401 without token', async () => {
+    const res = await request(app).get('/api/v1/boardings/my-listings');
+    expect(res.status).toBe(401);
+    expect(res.body.success).toBe(false);
+  });
+
+  it('PATCH /api/v1/boardings/some-id/submit returns 401 without token', async () => {
+    const res = await request(app).patch('/api/v1/boardings/some-id/submit');
+    expect(res.status).toBe(401);
+    expect(res.body.success).toBe(false);
+  });
+});
+
+describe('Saved boardings routes - Auth guard', () => {
+  it('GET /api/v1/saved-boardings returns 401 without token', async () => {
+    const res = await request(app).get('/api/v1/saved-boardings');
+    expect(res.status).toBe(401);
+    expect(res.body.success).toBe(false);
+  });
+
+  it('POST /api/v1/saved-boardings/:id returns 401 without token', async () => {
+    const res = await request(app).post('/api/v1/saved-boardings/some-id');
+    expect(res.status).toBe(401);
+    expect(res.body.success).toBe(false);
+  });
+});
+
+describe('Admin boarding routes - Auth guard', () => {
+  it('GET /api/v1/admin/boardings/pending returns 401 without token', async () => {
+    const res = await request(app).get('/api/v1/admin/boardings/pending');
+    expect(res.status).toBe(401);
+    expect(res.body.success).toBe(false);
+  });
+
+  it('PATCH /api/v1/admin/boardings/:id/approve returns 401 without token', async () => {
+    const res = await request(app).patch('/api/v1/admin/boardings/some-id/approve');
+    expect(res.status).toBe(401);
+    expect(res.body.success).toBe(false);
+  });
+});

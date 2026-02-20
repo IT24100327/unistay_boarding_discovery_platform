@@ -1,14 +1,18 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { authenticate, requireRole } from '../middleware/auth';
-import { validateQuery } from '../middleware/validate';
+import { validate, validateQuery } from '../middleware/validate';
 import {
   listUsers,
   getUserById,
   deactivateUser,
   activateUser,
+  listPendingBoardings,
+  approveBoarding,
+  rejectBoarding,
 } from '../controllers/admin.controller';
 import { adminListUsersQuerySchema } from '../validators/user.validators';
+import { rejectBoardingSchema } from '../validators/boarding.validators';
 
 const router = Router();
 
@@ -31,5 +35,9 @@ router.get('/users', validateQuery(adminListUsersQuerySchema), listUsers);
 router.get('/users/:id', getUserById);
 router.patch('/users/:id/deactivate', deactivateUser);
 router.patch('/users/:id/activate', activateUser);
+
+router.get('/boardings/pending', listPendingBoardings);
+router.patch('/boardings/:id/approve', approveBoarding);
+router.patch('/boardings/:id/reject', validate(rejectBoardingSchema), rejectBoarding);
 
 export default router;

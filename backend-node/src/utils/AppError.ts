@@ -60,3 +60,21 @@ export class ValidationError extends AppError {
     this.details = details;
   }
 }
+
+export class BoardingNotFoundError extends AppError {
+  constructor(message = 'Boarding not found') {
+    super(message, 404);
+  }
+}
+
+export class InvalidStateTransitionError extends AppError {
+  constructor(message = 'Invalid state transition') {
+    super(message, 422);
+  }
+}
+
+export class SlugConflictError extends AppError {
+  constructor(message = 'Slug already exists') {
+    super(message, 409);
+  }
+}
