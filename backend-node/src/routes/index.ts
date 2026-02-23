@@ -4,6 +4,10 @@ import userRoutes from './user.routes';
 import adminRoutes from './admin.routes';
 import boardingRoutes from './boarding.routes';
 import savedBoardingRoutes from './savedBoarding.routes';
+import reservationRoutes from './reservation.routes';
+import reviewRoutes from './review.routes';
+import paymentRoutes from './payment.routes';
+import visitRequestRoutes from './visitRequest.routes';
 
 const router = Router();
 
@@ -16,5 +20,9 @@ router.use('/api/v1/users', userRoutes);
 router.use('/api/v1/admin', adminRoutes);
 router.use('/api/v1/boardings', boardingRoutes);
 router.use('/api/v1/saved-boardings', savedBoardingRoutes);
+router.use('/api/v1/reservations', reservationRoutes);
+router.use('/api/v1/reviews', reviewRoutes);
+router.use('/api/v1/payments', paymentRoutes);
+router.use('/api/v1/visit-requests', visitRequestRoutes);
 
 export default router;

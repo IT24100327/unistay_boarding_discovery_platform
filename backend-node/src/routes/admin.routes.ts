@@ -10,6 +10,8 @@ import {
   listPendingBoardings,
   approveBoarding,
   rejectBoarding,
+  listAllReservations,
+  getPaymentReport,
 } from '../controllers/admin.controller';
 import { adminListUsersQuerySchema } from '../validators/user.validators';
 import { rejectBoardingSchema } from '../validators/boarding.validators';
@@ -39,5 +41,8 @@ router.patch('/users/:id/activate', activateUser);
 router.get('/boardings/pending', listPendingBoardings);
 router.patch('/boardings/:id/approve', approveBoarding);
 router.patch('/boardings/:id/reject', validate(rejectBoardingSchema), rejectBoarding);
+
+router.get('/reservations', listAllReservations);
+router.get('/payments/report', getPaymentReport);
 
 export default router;
