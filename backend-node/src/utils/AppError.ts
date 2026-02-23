@@ -78,3 +78,27 @@ export class SlugConflictError extends AppError {
     super(message, 409);
   }
 }
+
+export class ConflictError extends AppError {
+  constructor(message = 'Conflict') {
+    super(message, 409);
+  }
+}
+
+export class NotFoundError extends AppError {
+  constructor(message = 'Not found') {
+    super(message, 404);
+  }
+}
+
+export class GoneError extends AppError {
+  constructor(message = 'Resource is gone') {
+    super(message, 410);
+  }
+}
+
+export class BadRequestError extends AppError {
+  constructor(message = 'Bad request') {
+    super(message, 400);
+  }
+}

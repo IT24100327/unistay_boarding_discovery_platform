@@ -15,6 +15,7 @@ import {
   uploadImages,
   deleteImage,
 } from '../controllers/boarding.controller';
+import { getBoardingReviews } from '../controllers/review.controller';
 import {
   createBoardingSchema,
   updateBoardingSchema,
@@ -54,5 +55,8 @@ router.delete('/:id/images/:imageId', authenticate, requireRole('OWNER'), delete
 
 // Public slug route (after all specific paths)
 router.get('/:slug', getBoardingBySlug);
+
+// Reviews for a boarding (public, uses boarding id)
+router.get('/:id/reviews', getBoardingReviews);
 
 export default router;

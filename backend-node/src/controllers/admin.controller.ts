@@ -206,3 +206,71 @@ export async function rejectBoarding(req: Request, res: Response, next: NextFunc
     next(err);
   }
 }
+
+// GET /api/v1/admin/reservations
+export async function listAllReservations(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const reservations = await prisma.reservation.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        studentId: true,
+        boardingId: true,
+        status: true,
+        moveInDate: true,
+        rentSnapshot: true,
+        rejectionReason: true,
+        expiresAt: true,
+        createdAt: true,
+        updatedAt: true,
+        student: { select: { id: true, firstName: true, lastName: true, email: true } },
+        boarding: { select: { id: true, title: true, city: true, district: true } },
+      },
+    });
+
+    sendSuccess(res, { reservations });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/v1/admin/payments/report
+export async function getPaymentReport(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const [totalConfirmed, totalPending, overdueCount, byBoarding] = await prisma.$transaction([
+      prisma.payment.aggregate({
+        where: { status: 'CONFIRMED' },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      prisma.payment.aggregate({
+        where: { status: 'PENDING' },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      prisma.rentalPeriod.count({ where: { status: 'OVERDUE' } }),
+      prisma.rentalPeriod.groupBy({
+        by: ['reservationId'],
+        where: { status: { in: ['DUE', 'OVERDUE', 'PARTIALLY_PAID'] } },
+        orderBy: { _sum: { amountDue: 'desc' } },
+        _sum: { amountDue: true },
+        _count: true,
+      }),
+    ]);
+
+    sendSuccess(res, {
+      confirmed: {
+        count: totalConfirmed._count,
+        total: totalConfirmed._sum.amount ?? 0,
+      },
+      pending: {
+        count: totalPending._count,
+        total: totalPending._sum.amount ?? 0,
+      },
+      overdueRentalPeriods: overdueCount,
+      unpaidByReservation: byBoarding,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
