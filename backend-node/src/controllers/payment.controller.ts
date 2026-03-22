@@ -7,6 +7,7 @@ import {
   ConflictError,
   NotFoundError,
   BadRequestError,
+  ValidationError,
 } from '../utils/AppError';
 import { uploadPaymentProofImage } from '../utils/cloudinary';
 import { LogPaymentInput, RejectPaymentInput } from '../validators/payment.validators';
@@ -237,15 +238,7 @@ export async function uploadProofImage(req: Request, res: Response, next: NextFu
     const { id } = req.params as { id: string };
     const studentId = req.user!.userId;
 
-    if (!req.file) {
-      res.status(400).json({
-        success: false,
-        error: 'ValidationError',
-        message: 'No image file provided',
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
+    if (!req.file) throw new ValidationError('No image file provided');
 
     const existing = await prisma.payment.findUnique({ where: { id } });
     if (!existing) throw new NotFoundError('Payment not found');

@@ -4,7 +4,7 @@ import prisma from '../config/prisma';
 import { config } from '../config/env';
 import { sendSuccess } from '../utils/response';
 import { uploadProfileImage } from '../utils/cloudinary';
-import { UserNotFoundError, UnauthorizedError } from '../utils/AppError';
+import { UserNotFoundError, UnauthorizedError, ValidationError } from '../utils/AppError';
 import { UpdateProfileInput, ChangePasswordInput } from '../validators/user.validators';
 import { InvalidCredentialsError } from '../utils/AppError';
 
@@ -112,15 +112,7 @@ export async function uploadProfileImageHandler(
 ): Promise<void> {
   try {
     if (!req.user) throw new UnauthorizedError();
-    if (!req.file) {
-      res.status(400).json({
-        success: false,
-        error: 'ValidationError',
-        message: 'No image file provided',
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
+    if (!req.file) throw new ValidationError('No image file provided');
 
     const imageUrl = await uploadProfileImage(req.file.buffer, req.file.mimetype);
 
