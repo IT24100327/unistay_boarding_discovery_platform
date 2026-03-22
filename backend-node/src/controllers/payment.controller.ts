@@ -7,7 +7,9 @@ import {
   ConflictError,
   NotFoundError,
   BadRequestError,
+  ValidationError,
 } from '../utils/AppError';
+import { uploadPaymentProofImage } from '../utils/cloudinary';
 import { LogPaymentInput, RejectPaymentInput } from '../validators/payment.validators';
 import { PaymentStatus, RentalPeriodStatus } from '@prisma/client';
 
@@ -225,6 +227,19 @@ export async function rejectPayment(req: Request, res: Response, next: NextFunct
     });
 
     sendSuccess(res, { payment }, 'Payment rejected');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/v1/payments/proof-image  (student)
+export async function uploadProofImage(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!req.file) throw new ValidationError('No image file provided');
+
+    const proofImageUrl = await uploadPaymentProofImage(req.file.buffer, req.file.mimetype);
+
+    sendSuccess(res, { proofImageUrl }, 'Proof image uploaded successfully');
   } catch (err) {
     next(err);
   }
