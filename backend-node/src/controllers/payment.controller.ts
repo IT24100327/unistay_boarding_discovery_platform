@@ -232,32 +232,14 @@ export async function rejectPayment(req: Request, res: Response, next: NextFunct
   }
 }
 
-// PUT /api/v1/payments/:id/proof-image  (student)
+// POST /api/v1/payments/proof-image  (student)
 export async function uploadProofImage(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { id } = req.params as { id: string };
-    const studentId = req.user!.userId;
-
     if (!req.file) throw new ValidationError('No image file provided');
-
-    const existing = await prisma.payment.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundError('Payment not found');
-    if (existing.studentId !== studentId) {
-      throw new ForbiddenError('You are not the student on this payment');
-    }
-    if (existing.status !== PaymentStatus.PENDING) {
-      throw new BadRequestError('Proof image can only be updated for PENDING payments');
-    }
 
     const proofImageUrl = await uploadPaymentProofImage(req.file.buffer, req.file.mimetype);
 
-    const payment = await prisma.payment.update({
-      where: { id },
-      data: { proofImageUrl },
-      select: paymentSelect(),
-    });
-
-    sendSuccess(res, { payment }, 'Proof image uploaded successfully');
+    sendSuccess(res, { proofImageUrl }, 'Proof image uploaded successfully');
   } catch (err) {
     next(err);
   }
