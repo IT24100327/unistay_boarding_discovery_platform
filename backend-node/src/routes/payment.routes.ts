@@ -2,12 +2,14 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { authenticate, requireRole } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { uploadPaymentProofMiddleware } from '../middleware/upload';
 import {
   logPayment,
   getMyPayments,
   getMyBoardingPayments,
   confirmPayment,
   rejectPayment,
+  uploadProofImage,
 } from '../controllers/payment.controller';
 import { logPaymentSchema, rejectPaymentSchema } from '../validators/payment.validators';
 
@@ -31,6 +33,7 @@ router.use(paymentLimiter);
 router.post('/', authenticate, requireRole('STUDENT'), validate(logPaymentSchema), logPayment);
 router.get('/my-payments', authenticate, requireRole('STUDENT'), getMyPayments);
 router.get('/my-boardings', authenticate, requireRole('OWNER'), getMyBoardingPayments);
+router.put('/:id/proof-image', authenticate, requireRole('STUDENT'), uploadPaymentProofMiddleware, uploadProofImage);
 router.patch('/:id/confirm', authenticate, requireRole('OWNER'), confirmPayment);
 router.patch('/:id/reject', authenticate, requireRole('OWNER'), validate(rejectPaymentSchema), rejectPayment);
 

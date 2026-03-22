@@ -198,6 +198,12 @@ describe('Payment routes - Auth guard', () => {
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
   });
+
+  it('PUT /api/v1/payments/:id/proof-image returns 401 without token', async () => {
+    const res = await request(app).put('/api/v1/payments/some-id/proof-image');
+    expect(res.status).toBe(401);
+    expect(res.body.success).toBe(false);
+  });
 });
 
 describe('Visit request routes - Auth guard', () => {

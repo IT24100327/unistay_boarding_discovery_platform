@@ -8,6 +8,7 @@ import {
   NotFoundError,
   BadRequestError,
 } from '../utils/AppError';
+import { uploadPaymentProofImage } from '../utils/cloudinary';
 import { LogPaymentInput, RejectPaymentInput } from '../validators/payment.validators';
 import { PaymentStatus, RentalPeriodStatus } from '@prisma/client';
 
@@ -225,6 +226,45 @@ export async function rejectPayment(req: Request, res: Response, next: NextFunct
     });
 
     sendSuccess(res, { payment }, 'Payment rejected');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PUT /api/v1/payments/:id/proof-image  (student)
+export async function uploadProofImage(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params as { id: string };
+    const studentId = req.user!.userId;
+
+    if (!req.file) {
+      res.status(400).json({
+        success: false,
+        error: 'ValidationError',
+        message: 'No image file provided',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const existing = await prisma.payment.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundError('Payment not found');
+    if (existing.studentId !== studentId) {
+      throw new ForbiddenError('You are not the student on this payment');
+    }
+    if (existing.status !== PaymentStatus.PENDING) {
+      throw new BadRequestError('Proof image can only be updated for PENDING payments');
+    }
+
+    const proofImageUrl = await uploadPaymentProofImage(req.file.buffer, req.file.mimetype);
+
+    const payment = await prisma.payment.update({
+      where: { id },
+      data: { proofImageUrl },
+      select: paymentSelect(),
+    });
+
+    sendSuccess(res, { payment }, 'Proof image uploaded successfully');
   } catch (err) {
     next(err);
   }
